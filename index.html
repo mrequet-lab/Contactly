@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Irish Out West attendees</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF3F6; --surface:#FFFFFF; --ink:#16202E; --muted:#556476; --line:#D3DCE4;
+  --lanyard:#1F5F8B; --lanyard-ink:#FFFFFF; --mark:#F0B429; --danger:#B42318; --focus:#1F5F8B;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Public Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0E151E; --surface:#17212D; --ink:#E7EDF3; --muted:#9AA9B9; --line:#293645;
+    --lanyard:#5AA6D8; --lanyard-ink:#0E151E; --mark:#F0B429; --danger:#F97066; --focus:#8CC8EE;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+a{color:inherit}
+
+.wrap{max-width:1120px;margin:0 auto;padding:32px 20px 80px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;margin-bottom:28px}
+.event-name{font-family:var(--display);font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:1.05;letter-spacing:-0.02em;margin:0}
+.event-meta{color:var(--muted);margin:8px 0 0}
+.count{margin:4px 0 0;font-weight:500}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 20px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn-primary{background:var(--lanyard);color:var(--lanyard-ink)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-quiet{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-quiet:hover{border-color:var(--muted)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid currentColor}
+.btn[disabled]{opacity:.6;cursor:progress}
+
+/* Search */
+.search{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 6px 4px 16px}
+.search svg{flex:none;color:var(--muted)}
+.search input{flex:1;border:0;background:transparent;padding:12px 4px;font-size:1.05rem;min-width:0}
+.search input:focus{outline:none}
+.search:focus-within{border-color:var(--focus);box-shadow:0 0 0 2px color-mix(in srgb,var(--focus) 30%,transparent)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 26px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.875rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* Badge grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:20px}
+.badge{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;text-align:center;display:flex;flex-direction:column}
+.badge:hover{border-color:var(--muted)}
+.band{height:52px;background:var(--lanyard);position:relative}
+.band::before{content:"";position:absolute;top:14px;left:50%;width:44px;height:9px;margin-left:-22px;border-radius:6px;background:var(--paper)}
+.avatar{width:84px;height:84px;border-radius:50%;margin:-42px auto 0;border:4px solid var(--surface);background:var(--paper);object-fit:cover;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:1.6rem;color:var(--muted);position:relative}
+.badge-body{padding:10px 18px 18px;display:flex;flex-direction:column;gap:2px;flex:1}
+.name{font-family:var(--display);font-weight:700;font-size:1.35rem;line-height:1.15;margin:4px 0 2px}
+.role{color:var(--muted);font-size:.925rem}
+.org{font-weight:600;font-size:.95rem}
+.mini-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:10px 0 0}
+.mini-tags span{font-size:.78rem;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--mark) 22%,transparent)}
+.links{display:flex;justify-content:center;gap:6px;margin-top:auto;padding-top:14px}
+.icon-link{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--ink)}
+.icon-link:hover{background:var(--paper)}
+.mine-flag{position:absolute;top:10px;right:10px;font-size:.75rem;font-weight:600;background:var(--mark);color:#16202E;padding:2px 8px;border-radius:999px}
+
+.empty{text-align:center;padding:60px 20px;border:1px dashed var(--line);border-radius:14px}
+.empty h2{font-family:var(--display);margin:0 0 6px}
+.empty p{color:var(--muted);margin:0 0 18px}
+
+/* Dialogs */
+dialog{border:0;padding:0;border-radius:18px;background:var(--surface);color:var(--ink);width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
+dialog::backdrop{background:rgba(10,16,24,.55)}
+dialog[open]{animation:rise .18s ease-out}
+@keyframes rise{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+.dlg-head h2{font-family:var(--display);margin:0;font-size:1.35rem}
+.x{border:0;background:transparent;cursor:pointer;width:36px;height:36px;border-radius:50%;font-size:1.4rem;line-height:1}
+.x:hover{background:var(--paper)}
+.dlg-body{padding:22px}
+
+/* Form */
+.photo-pick{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.photo-pick .avatar{margin:0;border-color:var(--line);border-width:1px}
+fieldset{border:0;padding:0;margin:0 0 20px}
+legend{font-family:var(--display);font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-weight:500;font-size:.925rem}
+.field .hint{color:var(--muted);font-size:.825rem}
+.field input,.field textarea{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:10px 12px}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 2px color-mix(in srgb,var(--focus) 30%,transparent)}
+.field textarea{resize:vertical;min-height:72px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.row2{grid-template-columns:1fr}}
+.req{color:var(--danger)}
+.consent{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:10px;background:var(--paper);font-size:.925rem}
+.consent input{margin-top:4px;width:18px;height:18px;flex:none}
+.error{color:var(--danger);font-weight:500;margin:12px 0 0;min-height:1.5em}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:8px}
+
+/* Detail */
+.detail{text-align:center}
+.detail .band{height:64px}
+.detail .avatar{width:120px;height:120px;margin-top:-60px;font-size:2.2rem}
+.detail .name{font-size:1.75rem}
+.bio{max-width:44ch;margin:12px auto 0;color:var(--ink)}
+.contact-list{list-style:none;padding:0;margin:20px 22px 0;text-align:left;border:1px solid var(--line);border-radius:12px}
+.contact-list li+li{border-top:1px solid var(--line)}
+.contact-list a{display:flex;align-items:center;gap:12px;padding:13px 16px;text-decoration:none;word-break:break-all}
+.contact-list a:hover{background:var(--paper)}
+.contact-list svg{flex:none;color:var(--lanyard)}
+.detail .actions{justify-content:center;padding:20px 22px 24px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 class="event-name" id="eventName"></h1>
+      <p class="event-meta" id="eventMeta"></p>
+      <p class="count" id="count" aria-live="polite">Loading attendees…</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-quiet" id="refreshBtn" title="Load new cards">Refresh</button>
+      <button class="btn btn-primary" id="myCardBtn">Add your card</button>
+    </div>
+  </header>
+
+  <div class="search" role="search">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <label for="q" class="sr">Search attendees</label>
+    <input id="q" type="search" placeholder="Search by name, company, or topic" autocomplete="off">
+  </div>
+
+  <div class="tags" id="tagBar" aria-label="Filter by topic"></div>
+
+  <main id="results"></main>
+</div>
+
+<!-- Add / edit card -->
+<dialog id="formDlg" aria-labelledby="formTitle">
+  <div class="dlg-head"><h2 id="formTitle">Add your card</h2><button class="x" data-close aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <div class="photo-pick">
+      <div class="avatar" id="photoPreview" aria-hidden="true">?</div>
+      <div>
+        <label class="btn btn-quiet" for="photo" style="cursor:pointer">Upload headshot</label>
+        <input id="photo" type="file" accept="image/*" class="sr">
+        <div class="hint" style="color:var(--muted);font-size:.825rem;margin-top:6px">Square crop, centered. JPG or PNG.</div>
+        <button class="btn btn-quiet" id="removePhoto" style="padding:4px 10px;margin-top:6px;font-size:.825rem;display:none">Remove photo</button>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>About you</legend>
+      <div class="field"><label for="f-name">Full name <span class="req">*</span></label><input id="f-name" autocomplete="name"></div>
+      <div class="field"><label for="f-company">Company</label><input id="f-company" autocomplete="organization"></div>
+      <div class="field"><label for="f-bio">Short bio</label><textarea id="f-bio" maxlength="200" placeholder="What you work on, or what you'd like to talk about"></textarea><span class="hint" id="bioCount">0 / 200</span></div>
+      <div class="field"><label for="f-tags">Topics</label><input id="f-tags" placeholder="EVs, grid planning, hiring"><span class="hint">Separate with commas. Up to 5. Attendees can filter by these.</span></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>How people can reach you</legend>
+      <div class="field"><label for="f-email">Email</label><input id="f-email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" autocomplete="tel"><span class="hint">Leave blank if you'd rather not share it.</span></div>
+      <div class="field"><label for="f-linkedin">LinkedIn profile <span class="req">*</span></label><input id="f-linkedin" placeholder="linkedin.com/in/yourname"></div>
+      <div class="field"><label for="f-website">Website</label><input id="f-website" placeholder="yoursite.com"></div>
+    </fieldset>
+
+    <label class="consent"><input type="checkbox" id="f-consent"><span>Everything on this card will be visible to anyone with the link to this page.</span></label>
+    <p class="error" id="formError" role="alert"></p>
+    <div class="actions">
+      <button class="btn btn-quiet" data-close>Cancel</button>
+      <button class="btn btn-primary" id="saveBtn">Publish card</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Detail -->
+<dialog id="detailDlg" aria-label="Attendee details"><div id="detailBody"></div></dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---- Event settings: edit these ---- */
+const EVENT = { name: "Irish Out West", meta: "November 12th, 2026, Irish Times - San Francisco" };
+
+/* ---- Supabase settings: paste yours here ---- */
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_KEY = "YOUR-PUBLISHABLE-KEY";
+
+const $ = s => document.querySelector(s);
+const ICONS = {
+  linkedin:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4v11H3zM9.5 9.75h3.8v1.5h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1v5.45h-4v-4.83c0-1.15-.02-2.64-1.6-2.64-1.61 0-1.86 1.26-1.86 2.55v4.92h-3.94z"/></svg>',
+  email:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  phone:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  web:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  save:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>'
+};
+
+let cards = [], myId = null, query = "", activeTag = null, editingId = null, photoData = "";
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const withScheme = u => !u ? "" : /^https?:\/\//i.test(u) ? u : "https://" + u.replace(/^\/+/, "");
+const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase() || "?";
+const hostOf = u => { try { return new URL(u).host.replace(/^www\./, "") + new URL(u).pathname.replace(/\/$/, ""); } catch { return u; } };
+const avatarHTML = c => c.photo
+  ? `<img class="avatar" src="${esc(c.photo)}" alt="">`
+  : `<div class="avatar" aria-hidden="true">${esc(initials(c.name))}</div>`;
+
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
+
+/* ---- Backend (Supabase) ---- */
+const MINE_KEY = "iow-my-card";
+const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
+const sb = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let myToken = null;
+
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : "";
+const safePhoto = p => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(p || "") ? p : "";
+
+function showProblem(title, msg){
+  $("#count").textContent = "";
+  $("#results").innerHTML = `<div class="empty"><h2>${esc(title)}</h2><p>${esc(msg)}</p></div>`;
+}
+async function loadCards(){
+  if (!sb){ showProblem("Connect your database", "Add your Supabase project URL and publishable key near the top of the script in index.html."); return; }
+  const { data, error } = await sb.rpc("list_cards");
+  if (error){ console.error(error); showProblem("The directory didn't load", "Check your connection and select Refresh."); return; }
+  cards = (data || []).map(c => ({ ...c, linkedin: safeUrl(c.linkedin), website: safeUrl(c.website), photo: safePhoto(c.photo), tags: c.tags || [] }));
+  render();
+}
+function loadMine(){
+  // An edit link (#edit=<id>.<token>) lets someone manage their card from another device
+  const m = location.hash.match(/edit=([0-9a-f-]{36})\.([0-9a-f-]{36})/i);
+  if (m){
+    localStorage.setItem(MINE_KEY, JSON.stringify({ id: m[1], token: m[2] }));
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  try { const v = JSON.parse(localStorage.getItem(MINE_KEY) || "null"); if (v){ myId = v.id; myToken = v.token; } } catch {}
+}
+
+/* ---- Render ---- */
+function render(){
+  const mine = cards.find(c => c.id === myId);
+  $("#myCardBtn").textContent = mine ? "Edit your card" : "Add your card";
+  $("#count").textContent = cards.length === 1 ? "1 person has shared a card" : `${cards.length} people have shared a card`;
+
+  // topic chips, most common first
+  const freq = {};
+  cards.forEach(c => (c.tags || []).forEach(t => { const k = t.toLowerCase(); freq[k] = freq[k] || { label: t, n: 0 }; freq[k].n++; }));
+  const top = Object.entries(freq).sort((a, b) => b[1].n - a[1].n).slice(0, 14);
+  $("#tagBar").innerHTML = top.map(([k, v]) =>
+    `<button class="chip" data-tag="${esc(k)}" aria-pressed="${activeTag === k}">${esc(v.label)} (${v.n})</button>`).join("");
+
+  const q = query.trim().toLowerCase();
+  const list = cards.filter(c => {
+    if (activeTag && !(c.tags || []).some(t => t.toLowerCase() === activeTag)) return false;
+    if (!q) return true;
+    return [c.name, c.company, c.bio, (c.tags || []).join(" ")].join(" ").toLowerCase().includes(q);
+  });
+
+  const out = $("#results");
+  if (!cards.length){
+    out.innerHTML = `<div class="empty"><h2>No cards yet</h2><p>Add yours so other attendees can find you.</p><button class="btn btn-primary" data-add>Add your card</button></div>`;
+    return;
+  }
+  if (!list.length){
+    out.innerHTML = `<div class="empty"><h2>No one matches “${esc(query || freq[activeTag]?.label || "")}”</h2><p>Try a different name, company, or topic.</p><button class="btn btn-quiet" data-clear>Clear search</button></div>`;
+    return;
+  }
+  out.innerHTML = `<div class="grid">${list.map(c => `
+    <article class="badge" data-id="${c.id}" tabindex="0" aria-label="${esc(c.name)}">
+      ${c.id === myId ? '<span class="mine-flag">You</span>' : ""}
+      <div class="band"></div>
+      ${avatarHTML(c)}
+      <div class="badge-body">
+        <div class="name">${esc(c.name)}</div>
+        ${c.company ? `<div class="org">${esc(c.company)}</div>` : ""}
+        ${(c.tags || []).length ? `<div class="mini-tags">${c.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
+        <div class="links">
+          ${c.linkedin ? `<a class="icon-link" href="${esc(c.linkedin)}" target="_blank" rel="noopener" title="LinkedIn">${ICONS.linkedin}</a>` : ""}
+          ${c.email ? `<a class="icon-link" href="mailto:${esc(c.email)}" title="Email ${esc(c.email)}">${ICONS.email}</a>` : ""}
+          ${c.phone ? `<a class="icon-link" href="tel:${esc(c.phone.replace(/[^\d+]/g, ""))}" title="Call ${esc(c.phone)}">${ICONS.phone}</a>` : ""}
+          ${c.website ? `<a class="icon-link" href="${esc(c.website)}" target="_blank" rel="noopener" title="Website">${ICONS.web}</a>` : ""}
+        </div>
+      </div>
+    </article>`).join("")}</div>`;
+}
+
+/* ---- Detail ---- */
+function openDetail(id){
+  const c = cards.find(x => x.id === id); if (!c) return;
+  const rows = [
+    c.linkedin && `<li><a href="${esc(c.linkedin)}" target="_blank" rel="noopener">${ICONS.linkedin}<span>View LinkedIn profile</span></a></li>`,
+    c.email && `<li><a href="mailto:${esc(c.email)}">${ICONS.email}<span>${esc(c.email)}</span></a></li>`,
+    c.phone && `<li><a href="tel:${esc(c.phone.replace(/[^\d+]/g, ""))}">${ICONS.phone}<span>${esc(c.phone)}</span></a></li>`,
+    c.website && `<li><a href="${esc(c.website)}" target="_blank" rel="noopener">${ICONS.web}<span>${esc(hostOf(c.website))}</span></a></li>`
+  ].filter(Boolean).join("");
+  $("#detailBody").innerHTML = `
+    <div class="detail">
+      <div class="band" style="display:flex;justify-content:flex-end;padding:8px"><button class="x" data-close aria-label="Close" style="color:var(--lanyard-ink)">×</button></div>
+      ${avatarHTML(c)}
+      <div style="padding:0 22px">
+        <div class="name">${esc(c.name)}</div>
+        ${c.company ? `<div class="org">${esc(c.company)}</div>` : ""}
+        ${c.bio ? `<p class="bio">${esc(c.bio)}</p>` : ""}
+        ${(c.tags || []).length ? `<div class="mini-tags">${c.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
+      </div>
+      <ul class="contact-list">${rows}</ul>
+      <div class="actions">
+        <button class="btn btn-primary" data-vcard="${c.id}">${ICONS.save} Save contact</button>
+        ${c.id === myId ? `<button class="btn btn-quiet" data-edit>Edit your card</button><button class="btn btn-quiet" data-editlink title="Use this link to edit your card from another device">Copy edit link</button><button class="btn btn-danger" data-remove>Remove your card</button>` : ""}
+      </div>
+    </div>`;
+  $("#detailDlg").showModal();
+}
+
+/* ---- vCard ---- */
+const vEsc = s => String(s).replace(/([\\,;])/g, "\\$1").replace(/\n/g, "\\n");
+const fold = line => line.length <= 74 ? line : line.match(/.{1,74}/g).join("\r\n ");
+function downloadVCard(c){
+  const parts = c.name.trim().split(/\s+/), last = parts.length > 1 ? parts.pop() : "", first = parts.join(" ");
+  const L = ["BEGIN:VCARD", "VERSION:3.0", `N:${vEsc(last)};${vEsc(first)};;;`, `FN:${vEsc(c.name)}`];
+  if (c.company) L.push(`ORG:${vEsc(c.company)}`);
+  if (c.email) L.push(`EMAIL;TYPE=INTERNET:${c.email}`);
+  if (c.phone) L.push(`TEL;TYPE=CELL:${c.phone}`);
+  if (c.website) L.push(`URL:${c.website}`);
+  if (c.linkedin) L.push(`URL;TYPE=LinkedIn:${c.linkedin}`, `X-SOCIALPROFILE;TYPE=linkedin:${c.linkedin}`);
+  L.push(`NOTE:${vEsc(`Met at ${EVENT.name}` + (c.bio ? `. ${c.bio}` : ""))}`);
+  if (c.photo) L.push(`PHOTO;ENCODING=b;TYPE=JPEG:${c.photo.split(",")[1]}`);
+  L.push("END:VCARD");
+  const blob = new Blob([L.map(fold).join("\r\n")], { type: "text/vcard" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = c.name.replace(/[^\w\- ]/g, "").trim().replace(/\s+/g, "_") + ".vcf";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---- Form ---- */
+const F = id => $("#f-" + id);
+function setPhoto(d){
+  photoData = d;
+  const p = $("#photoPreview");
+  if (d){ p.innerHTML = `<img src="${d}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`; $("#removePhoto").style.display = "inline-flex"; }
+  else { p.textContent = initials(F("name").value || "?"); $("#removePhoto").style.display = "none"; }
+}
+function openForm(){
+  const c = cards.find(x => x.id === myId);
+  editingId = c ? c.id : null;
+  $("#formTitle").textContent = c ? "Edit your card" : "Add your card";
+  $("#saveBtn").textContent = c ? "Save changes" : "Publish card";
+  ["name", "company", "bio", "email", "phone", "linkedin", "website"].forEach(k => F(k).value = c ? (c[k] || "") : "");
+  F("tags").value = c ? (c.tags || []).join(", ") : "";
+  F("consent").checked = !!c;
+  $("#bioCount").textContent = `${F("bio").value.length} / 200`;
+  $("#formError").textContent = "";
+  setPhoto(c ? c.photo || "" : "");
+  $("#formDlg").showModal();
+  F("name").focus();
+}
+function resizeImage(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(img.width, img.height), cv = document.createElement("canvas");
+      cv.width = cv.height = 320;
+      cv.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 320, 320);
+      URL.revokeObjectURL(url); res(cv.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("That file couldn't be read as an image. Upload a JPG or PNG.")); };
+    img.src = url;
+  });
+}
+async function saveCard(){
+  const err = $("#formError"); err.textContent = "";
+  const name = F("name").value.trim(), linkedin = F("linkedin").value.trim();
+  if (!name){ err.textContent = "Add your full name."; F("name").focus(); return; }
+  if (!linkedin){ err.textContent = "Add your LinkedIn profile so people can connect with you."; F("linkedin").focus(); return; }
+  if (!F("consent").checked){ err.textContent = "Check the box to confirm your card will be visible to attendees."; F("consent").focus(); return; }
+
+  const fields = {
+    p_name: name, p_company: F("company").value.trim(), p_bio: F("bio").value.trim(),
+    p_email: F("email").value.trim(), p_phone: F("phone").value.trim(),
+    p_linkedin: withScheme(linkedin), p_website: withScheme(F("website").value.trim()),
+    p_tags: F("tags").value.split(",").map(t => t.trim()).filter(Boolean).slice(0, 5),
+    p_photo: photoData || null
+  };
+  const btn = $("#saveBtn"); btn.disabled = true;
+  try {
+    if (editingId){
+      const { data, error } = await sb.rpc("update_card", { p_id: editingId, p_token: myToken, ...fields });
+      if (error) throw error;
+      if (!data){ const x = new Error(); x.userMessage = "This device can no longer edit that card. Open your edit link and try again."; throw x; }
+    } else {
+      const { data, error } = await sb.rpc("create_card", fields);
+      if (error) throw error;
+      myId = data.id; myToken = data.edit_token;
+      localStorage.setItem(MINE_KEY, JSON.stringify({ id: myId, token: myToken }));
+    }
+    $("#formDlg").close();
+    await loadCards();
+    toast(editingId ? "Changes saved" : "Card published");
+  } catch (e) {
+    console.error(e);
+    err.textContent = e.userMessage || "Your card didn't save. Check your connection and try again.";
+  } finally { btn.disabled = false; }
+}
+async function removeCard(){
+  if (!confirm("Remove your card from the directory? Attendees will no longer see it.")) return;
+  const { data, error } = await sb.rpc("delete_card", { p_id: myId, p_token: myToken });
+  if (error || !data){ toast("Your card wasn't removed. Try again."); return; }
+  localStorage.removeItem(MINE_KEY);
+  cards = cards.filter(c => c.id !== myId); myId = null; myToken = null;
+  $("#detailDlg").close(); render(); toast("Card removed");
+}
+async function copyEditLink(){
+  const link = `${location.origin}${location.pathname}#edit=${myId}.${myToken}`;
+  try { await navigator.clipboard.writeText(link); toast("Edit link copied. Keep it private."); }
+  catch { prompt("Copy your private edit link:", link); }
+}
+
+/* ---- Events ---- */
+$("#eventName").textContent = EVENT.name;
+$("#eventMeta").textContent = EVENT.meta;
+document.title = EVENT.name + " attendees";
+
+$("#q").addEventListener("input", e => { query = e.target.value; render(); });
+$("#myCardBtn").addEventListener("click", () => { if (!sb) return toast("Connect the database first"); openForm(); });
+$("#refreshBtn").addEventListener("click", async e => { e.target.disabled = true; await loadCards(); e.target.disabled = false; toast("Directory updated"); });
+$("#saveBtn").addEventListener("click", saveCard);
+$("#removePhoto").addEventListener("click", () => setPhoto(""));
+F("bio").addEventListener("input", e => $("#bioCount").textContent = `${e.target.value.length} / 200`);
+F("name").addEventListener("input", () => { if (!photoData) setPhoto(""); });
+$("#photo").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { setPhoto(await resizeImage(f)); $("#formError").textContent = ""; }
+  catch (x) { $("#formError").textContent = x.message; }
+  e.target.value = "";
+});
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  if (t.closest("[data-close]")) { t.closest("dialog").close(); return; }
+  if (t.closest("[data-add]")) { openForm(); return; }
+  if (t.closest("[data-clear]")) { query = ""; activeTag = null; $("#q").value = ""; render(); return; }
+  if (t.closest("[data-vcard]")) { downloadVCard(cards.find(c => c.id === t.closest("[data-vcard]").dataset.vcard)); return; }
+  if (t.closest("[data-edit]")) { $("#detailDlg").close(); openForm(); return; }
+  if (t.closest("[data-remove]")) { removeCard(); return; }
+  if (t.closest("[data-editlink]")) { copyEditLink(); return; }
+  const chip = t.closest(".chip");
+  if (chip) { activeTag = activeTag === chip.dataset.tag ? null : chip.dataset.tag; render(); return; }
+  if (t.closest(".icon-link")) return; // let links act directly
+  const badge = t.closest(".badge");
+  if (badge) openDetail(badge.dataset.id);
+});
+document.addEventListener("keydown", e => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("badge")) { e.preventDefault(); openDetail(e.target.dataset.id); }
+});
+document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+
+(async () => { await loadMine(); await loadCards(); })();
+</script>
+</body>
+</html>
