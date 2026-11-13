@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Irish Out West attendees</title>
+<title>Contactly</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -32,6 +32,8 @@ a{color:inherit}
 /* Header */
 .top{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;margin-bottom:28px}
 .event-name{font-family:var(--display);font-weight:700;font-size:clamp(2rem,5vw,3.25rem);line-height:1.05;letter-spacing:-0.02em;margin:0}
+.brand{display:inline-block;margin-bottom:10px;font-family:var(--display);font-weight:700;font-size:1.05rem;color:var(--lanyard);text-decoration:none}
+.brand:hover{text-decoration:underline}
 .event-meta{color:var(--muted);margin:8px 0 0}
 .count{margin:4px 0 0;font-weight:500}
 
@@ -121,6 +123,7 @@ legend{font-family:var(--display);font-weight:700;font-size:1.05rem;margin-botto
 
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
+[hidden]{display:none !important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -128,6 +131,7 @@ legend{font-family:var(--display);font-weight:700;font-size:1.05rem;margin-botto
 <div class="wrap">
   <header class="top">
     <div>
+      <a class="brand" id="brand" href="./" hidden>Contactly</a>
       <h1 class="event-name" id="eventName"></h1>
       <p class="event-meta" id="eventMeta"></p>
       <p class="count" id="count" aria-live="polite">Loading attendees…</p>
@@ -196,7 +200,12 @@ legend{font-family:var(--display);font-weight:700;font-size:1.05rem;margin-botto
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---- Event settings: edit these ---- */
-const EVENT = { name: "Irish Out West", meta: "November 12th, 2026, Irish Times - San Francisco" };
+/* ---- Site settings ---- */
+// Each event lives at ?event=<slug>. Events are rows in the "events" table in Supabase.
+// The plain link (no ?event=) shows the Contactly home page. To send it to an event instead, put that event's slug here.
+const DEFAULT_EVENT = "";
+const EVENT_SLUG = (new URLSearchParams(location.search).get("event") || DEFAULT_EVENT).trim().toLowerCase();
+let EVENT = { slug: EVENT_SLUG, name: "", details: "", is_open: false };
 
 /* ---- Supabase settings: paste yours here ---- */
 const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
@@ -224,7 +233,9 @@ const avatarHTML = c => c.photo
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
 
 /* ---- Backend (Supabase) ---- */
-const MINE_KEY = "iow-my-card";
+// "My card" is remembered per event, so events on the same site never mix up
+const MINE_KEY = "my-card:" + SUPABASE_URL + ":" + EVENT_SLUG;
+const LEGACY_MINE_KEY = "my-card:" + SUPABASE_URL; // from the single-event version
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
 const sb = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 let myToken = null;
@@ -238,7 +249,7 @@ function showProblem(title, msg){
 }
 async function loadCards(){
   if (!sb){ showProblem("Connect your database", "Add your Supabase project URL and publishable key near the top of the script in index.html."); return; }
-  const { data, error } = await sb.rpc("list_cards");
+  const { data, error } = await sb.rpc("list_cards", { p_event: EVENT.slug });
   if (error){ console.error(error); showProblem("The directory didn't load", "Check your connection and select Refresh."); return; }
   cards = (data || []).map(c => ({ ...c, linkedin: safeUrl(c.linkedin), website: safeUrl(c.website), photo: safePhoto(c.photo), tags: c.tags || [] }));
   render();
@@ -250,14 +261,40 @@ function loadMine(){
     localStorage.setItem(MINE_KEY, JSON.stringify({ id: m[1], token: m[2] }));
     history.replaceState(null, "", location.pathname + location.search);
   }
-  try { const v = JSON.parse(localStorage.getItem(MINE_KEY) || "null"); if (v){ myId = v.id; myToken = v.token; } } catch {}
+  try {
+    const v = JSON.parse(localStorage.getItem(MINE_KEY) || localStorage.getItem(LEGACY_MINE_KEY) || "null");
+    if (v){ myId = v.id; myToken = v.token; } // only counts as "mine" if that card is in this event
+  } catch {}
+}
+async function loadEvent(){
+  if (!sb){ showProblem("Connect your database", "Add your Supabase project URL and publishable key near the top of the script in index.html."); return false; }
+  if (!EVENT_SLUG){
+    $("#eventName").textContent = "Contactly";
+    $("#eventMeta").textContent = "Contact cards for the people you meet at events.";
+    showProblem("Open your event's link", "Each event has its own directory. Ask the organizer for the link to yours.");
+    return false;
+  }
+  const { data, error } = await sb.rpc("get_event", { p_slug: EVENT_SLUG });
+  if (error){ console.error(error); showProblem("The directory didn't load", "Check your connection and reload the page."); return false; }
+  if (!data){ $("#eventName").textContent = "Contactly"; showProblem("Event not found", "Check the link with the organizer. It should end in ?event= followed by the event's name."); return false; }
+  EVENT = data;
+  $("#eventName").textContent = EVENT.name;
+  $("#eventMeta").textContent = EVENT.details || "";
+  document.title = EVENT.name + " | Contactly";
+  $("#brand").hidden = false;
+  return true;
+}
+function showChrome(on){
+  ["#refreshBtn", "#myCardBtn", ".search", "#tagBar"].forEach(sel => $(sel).hidden = !on);
 }
 
 /* ---- Render ---- */
 function render(){
   const mine = cards.find(c => c.id === myId);
   $("#myCardBtn").textContent = mine ? "Edit your card" : "Add your card";
-  $("#count").textContent = cards.length === 1 ? "1 person has shared a card" : `${cards.length} people have shared a card`;
+  $("#myCardBtn").hidden = !mine && !EVENT.is_open;
+  $("#count").textContent = (cards.length === 1 ? "1 person has shared a card" : `${cards.length} people have shared a card`)
+    + (EVENT.is_open ? "" : ". New cards are closed.");
 
   // topic chips, most common first
   const freq = {};
@@ -275,7 +312,9 @@ function render(){
 
   const out = $("#results");
   if (!cards.length){
-    out.innerHTML = `<div class="empty"><h2>No cards yet</h2><p>Add yours so other attendees can find you.</p><button class="btn btn-primary" data-add>Add your card</button></div>`;
+    out.innerHTML = EVENT.is_open
+      ? `<div class="empty"><h2>No cards yet</h2><p>Add yours so other attendees can find you.</p><button class="btn btn-primary" data-add>Add your card</button></div>`
+      : `<div class="empty"><h2>No cards yet</h2><p>This event isn't taking new cards.</p></div>`;
     return;
   }
   if (!list.length){
@@ -407,7 +446,7 @@ async function saveCard(){
       if (error) throw error;
       if (!data){ const x = new Error(); x.userMessage = "This device can no longer edit that card. Open your edit link and try again."; throw x; }
     } else {
-      const { data, error } = await sb.rpc("create_card", fields);
+      const { data, error } = await sb.rpc("create_card", { p_event: EVENT.slug, ...fields });
       if (error) throw error;
       myId = data.id; myToken = data.edit_token;
       localStorage.setItem(MINE_KEY, JSON.stringify({ id: myId, token: myToken }));
@@ -417,27 +456,25 @@ async function saveCard(){
     toast(editingId ? "Changes saved" : "Card published");
   } catch (e) {
     console.error(e);
-    err.textContent = e.userMessage || "Your card didn't save. Check your connection and try again.";
+    err.textContent = e.userMessage
+      || (/not accepting/i.test(e.message || "") ? "This event isn't taking new cards anymore." : "Your card didn't save. Check your connection and try again.");
   } finally { btn.disabled = false; }
 }
 async function removeCard(){
   if (!confirm("Remove your card from the directory? Attendees will no longer see it.")) return;
   const { data, error } = await sb.rpc("delete_card", { p_id: myId, p_token: myToken });
   if (error || !data){ toast("Your card wasn't removed. Try again."); return; }
-  localStorage.removeItem(MINE_KEY);
+  localStorage.removeItem(MINE_KEY); localStorage.removeItem(LEGACY_MINE_KEY);
   cards = cards.filter(c => c.id !== myId); myId = null; myToken = null;
   $("#detailDlg").close(); render(); toast("Card removed");
 }
 async function copyEditLink(){
-  const link = `${location.origin}${location.pathname}#edit=${myId}.${myToken}`;
+  const link = `${location.origin}${location.pathname}?event=${encodeURIComponent(EVENT.slug)}#edit=${myId}.${myToken}`;
   try { await navigator.clipboard.writeText(link); toast("Edit link copied. Keep it private."); }
   catch { prompt("Copy your private edit link:", link); }
 }
 
 /* ---- Events ---- */
-$("#eventName").textContent = EVENT.name;
-$("#eventMeta").textContent = EVENT.meta;
-document.title = EVENT.name + " attendees";
 
 $("#q").addEventListener("input", e => { query = e.target.value; render(); });
 $("#myCardBtn").addEventListener("click", () => { if (!sb) return toast("Connect the database first"); openForm(); });
@@ -473,7 +510,13 @@ document.addEventListener("keydown", e => {
 });
 document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 
-(async () => { await loadMine(); await loadCards(); })();
+(async () => {
+  showChrome(false);
+  if (!(await loadEvent())) return;
+  showChrome(true);
+  loadMine();
+  await loadCards();
+})();
 </script>
 </body>
 </html>
