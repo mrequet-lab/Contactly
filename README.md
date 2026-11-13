@@ -5,7 +5,7 @@ One site and one database serve every event. Attendees add a contact card (heads
 Each event has its own link:
 
 ```
-https://<your-username>.github.io/contactly/?event=<event-slug>
+https://mrequet-lab.github.io/contactly/?event=<event-slug>
 ```
 
 ## Add a new event
